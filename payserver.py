@@ -161,27 +161,28 @@ class PayServer(Logger, EventListener):
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         key = request.query_string
-        info = self.wallet.get_formatted_request(key)
-        if not info:
-            await ws.send_str('unknown invoice')
-            await ws.close()
-            return ws
-        if info.get('status') == PR_PAID:
-            await ws.send_str(f'paid')
-            await ws.close()
-            return ws
-        if info.get('status') == PR_EXPIRED:
-            await ws.send_str(f'expired')
-            await ws.close()
-            return ws
         while True:
+            info = self.wallet.get_formatted_request(key)
+            if not info:
+                response = 'unknown invoice'
+            elif info.get('status') == PR_PAID:
+                response = 'paid'
+            elif info.get('status') == PR_EXPIRED:
+                response = 'expired'
+            else:
+                response = 'waiting'
+            try:
+                await ws.send_str(response)
+            except Exception as e:
+                self.logger.info(f'{str(e)}')
+                break
+            if response != 'waiting':
+                break
             try:
                 await util.wait_for2(self.pending[key].wait(), 1)
-                break
             except asyncio.TimeoutError:
                 # send data on the websocket, to keep it alive
-                await ws.send_str('waiting')
-        await ws.send_str('paid')
+                continue
         await ws.close()
         return ws
 
