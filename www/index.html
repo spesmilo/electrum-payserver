@@ -188,12 +188,13 @@ if (id) {
 	    var URI;
 	    var request;
 	    var qr_text;
-	    $("<p />").text("Powered by Electrum").appendTo($("p#powered"));
+	    $("<p />").text("Powered by Electrum Payserver").appendTo($("p#powered"));
 	    if(!data) {
 		paymentUnknown();
 		return;
 	    }
-	    if (data.is_lightning && !data.can_receive){
+	    if (data.is_lightning && data.can_receive == false){
+		$("#lnerror").show();
 		$("#lnerror").text("Error: The server does not have enough inbound capacity to receive this amount with lightning. Try reloading this page later.");
 		$(".tabcontent").hide();
 		return;
